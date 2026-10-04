@@ -22,6 +22,19 @@
         "shadow": false,
         "alwaysOnTop": true,
         "center": true
+      },
+      {
+        "label": "panel",
+        "title": "creator-tools panel",
+        "width": 440,
+        "height": 446,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false,
+        "alwaysOnTop": true,
+        "center": true,
+        "visible": false
       }
     ],
     "security": {

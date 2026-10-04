@@ -36,7 +36,6 @@ body {
   cursor: grab;
 }
 
-/* Let drag events reach the drag region instead of the icon */
 .grip svg {
   pointer-events: none;
 }
@@ -64,4 +63,71 @@ body {
 
 .menu button:active {
   transform: scale(0.94);
+}
+
+.menu button {
+  position: relative;
+}
+
+.menu button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.menu button:disabled:hover {
+  background: transparent;
+}
+
+.menu button.record.active {
+  color: #ef4444;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.menu button.record.active svg {
+  fill: currentColor;
+}
+
+.menu button.pause.active,
+.menu button.mic.active {
+  color: #f59e0b;
+}
+
+.badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font: 600 11px/18px system-ui, sans-serif;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.menu svg.progress-ring {
+  position: absolute;
+  inset: 0;
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.progress-ring circle {
+  fill: none;
+  stroke: var(--hover);
+  stroke-width: 2;
+}
+
+.progress-ring circle.value {
+  stroke: var(--fg);
+  transition: stroke-dashoffset 300ms;
 }
