@@ -1,0 +1,221 @@
+:root {
+  --bg: rgba(24, 24, 27, 0.92);
+  --fg: #e4e4e7;
+  --muted: #a1a1aa;
+  --hover: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.08);
+  --sheet: #212124;
+  --rec: #ef4444;
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+  padding: 8px;
+  box-sizing: border-box;
+  color: var(--fg);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 80px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+.grip {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 56px;
+  opacity: 0.5;
+  cursor: grab;
+}
+
+.grip svg {
+  pointer-events: none;
+}
+
+.menu svg {
+  width: 32px;
+  height: 32px;
+}
+
+.menu button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.menu button:hover,
+.menu button.active {
+  background: var(--hover);
+}
+
+.menu button:active {
+  transform: scale(0.94);
+}
+
+.menu button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.menu button:disabled:hover {
+  background: transparent;
+}
+
+.menu button.record {
+  color: var(--rec);
+}
+
+.menu button.record svg {
+  fill: currentColor;
+}
+
+.menu button.record.active {
+  background: transparent;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.wave {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 260px;
+  height: 56px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  cursor: grab;
+}
+
+.waveform {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  color: #52525b;
+  pointer-events: none;
+}
+
+.waveform.listening {
+  color: var(--fg);
+}
+
+.waveform.loading {
+  color: var(--muted);
+}
+
+.wave .label {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Sheets follow the bar's width instead of growing it: width 0 keeps their
+   text out of the app's max-content size, min-width stretches them back. */
+.sheet {
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--sheet);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  padding: 0 18px;
+}
+
+.row select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  text-align: right;
+  text-align-last: right;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.row option {
+  background: #27272a;
+  color: var(--fg);
+}
+
+.transcript {
+  height: 160px;
+  padding: 14px 18px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  user-select: text;
+}
+
+.transcript p {
+  margin: 0 0 6px;
+  color: var(--muted);
+  line-height: 22px;
+}
+
+.transcript .latest {
+  color: var(--fg);
+}
+
+.transcript p.placeholder {
+  color: #71717a;
+}
+
+.transcript p.status {
+  overflow: hidden;
+  font-size: 13px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.transcript p.status.error {
+  color: #f87171;
+}

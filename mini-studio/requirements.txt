@@ -1,0 +1,9 @@
+# Python packages for the project venv:  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+rembg[cpu]                 # cutout.py: AI background removal
+opencv-python-headless     # cutout.py: finds your face so thumbnails frame it right
+faster-whisper             # subtitles.py / shorts.py: speech to text
+google-api-python-client   # youtube_upload.py
+google-auth-oauthlib       # youtube_upload.py: OAuth login
+fastapi                    # studio.py: web app backend
+uvicorn[standard]          # studio.py: web server
+python-multipart           # studio.py: file uploads

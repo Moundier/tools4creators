@@ -1,0 +1,18 @@
+This project is about
+- template thumbnails
+- pearson cutout with ai
+- mic configs
+- obs templates
+- mic config (PipeWire)
+- auto subtitles (Whisper), Shorts maker
+- youTube upload + schedule
+
+
+todo - long term
+ai model capture face and make 3d of it
+ai model capture face movement and put in the 3d model
+ai model capture body and make 3d of it
+ai model capture body movement and put in the 3d model
+
+
+todo - short term

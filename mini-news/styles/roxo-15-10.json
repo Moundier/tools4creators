@@ -1,0 +1,66 @@
+{
+  "name": "Roxo (15/10)",
+  "format": "9:16",
+  "colors": {
+    "accent": [
+      "#8e24aa",
+      "#4a148c"
+    ],
+    "breaking": [
+      "#eb2834",
+      "#960a16"
+    ],
+    "background": [
+      "#ffffff",
+      "#060c34"
+    ],
+    "plate": [
+      "#fafbfd",
+      "#d6dae2",
+      "#b0b6c2"
+    ],
+    "plate_text": "#0d1a4a",
+    "bar": [
+      "#101e60",
+      "#050b30"
+    ],
+    "text": "#ffffff",
+    "muted": "#aab6e1",
+    "number": "#ce93d8",
+    "quote_mark": "#ab47bc"
+  },
+  "background": {
+    "image": "",
+    "opacity": 0.35,
+    "darken": 0.45,
+    "stripes": true
+  },
+  "logo": {
+    "image": "",
+    "position": "top",
+    "height": 110
+  },
+  "fonts": {
+    "heading": "",
+    "body": "",
+    "heading_name": "",
+    "body_name": ""
+  },
+  "sizes": {
+    "headline": 1,
+    "subhead": 1,
+    "quote": 1,
+    "number": 1,
+    "label": 1,
+    "tab": 1
+  },
+  "texts": {
+    "channel": "Newhouse",
+    "badge": "NEWS",
+    "follow": "Siga {channel} para mais notícias",
+    "source_prefix": "FONTE:",
+    "show_date": true,
+    "show_badge": true
+  },
+  "templates": {}
+}

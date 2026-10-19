@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mini-news</title>
+<style>
+  /* mini-news: the same plain-CSS design system as mini-studio (dark zinc, monochrome) and the deck popup */
+  :root {
+    color-scheme: dark;
+    --page: #18181b; --card: #212124; --soft: #27272a; --field: #18181b;
+    --text: #e4e4e7; --muted: #a1a1aa; --line: rgba(255, 255, 255, .08); --line-strong: #3f3f46;
+    --hover: rgba(255, 255, 255, .1); --hover-soft: rgba(255, 255, 255, .03);
+    --ok: #2ba640; --ok-bg: rgba(43, 166, 64, .14); --link-ok: #6fdc84;
+    --warn: #f5b041; --warn-bg: rgba(245, 176, 65, .12);
+    --err: #f87171; --err-bg: rgba(255, 78, 78, .14);
+    --r-sm: 8px; --r: 12px; --r-lg: 14px;
+    --shadow: 0 4px 14px rgba(0, 0, 0, .35); --shadow-lg: 0 12px 32px rgba(0, 0, 0, .55);
+    --focus: 0 0 0 2px rgba(255, 255, 255, .35);
+    --font: Inter, system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; font: 400 14px/1.45 var(--font); background: var(--page); color: var(--text); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3, h4 { font-weight: 600; letter-spacing: -.01em; margin: 0; }
+  h3 { font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  h4 { margin: 18px 0 4px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  a { color: var(--text); }
+  svg.i { display: block; flex: none; }
+  button svg, a svg, label svg { pointer-events: none; }
+  * { scrollbar-color: #3f3f46 transparent; }
+  ::selection { background: rgba(255, 255, 255, .2); }
+
+  /* ---------------------------------------------------------------- shell: top bar + drafts sidebar (like mini-studio) */
+  header { position: sticky; top: 0; z-index: 20; height: 64px; display: flex; align-items: center; gap: 12px; padding: 0 20px;
+           background: var(--card); border-bottom: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { font-size: 21px; font-weight: 500; letter-spacing: -.02em; }
+  .brand .logo { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: var(--text); color: #18181b; }
+  header .tag { color: var(--muted); font-size: 13px; }
+  .layout { display: grid; grid-template-columns: 272px 1fr; min-height: calc(100vh - 64px); }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 1px solid var(--line); } }
+  aside { background: var(--card); border-right: 1px solid var(--line); padding: 16px 12px; }
+  aside h2 { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 18px 8px 8px; }
+  .item { display: grid; gap: 6px; padding: 10px 10px 8px; border-radius: var(--r); cursor: pointer; margin-bottom: 2px; }
+  .item:hover { background: var(--hover-soft); } .item.on { background: var(--hover); }
+  .item b { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .meta { display: flex; align-items: center; gap: 4px; }
+  .item .acts { margin-left: auto; display: flex; gap: 2px; opacity: .55; }
+  .item:hover .acts, .item.on .acts { opacity: 1; }
+  main { padding: 22px 24px 60px; max-width: 1280px; min-width: 0; }
+
+  /* ---------------------------------------------------------------- stepper (mini-studio's: numbered dots, current one white) */
+  .steps { display: flex; gap: 6px; margin: 0 0 22px; overflow-x: auto; scrollbar-width: none; }
+  .steps .st { flex: 1; display: flex; align-items: center; min-width: max-content; }
+  .steps .st:not(:last-child)::after { content: ''; flex: 1; height: 2px; background: var(--line); margin: 0 6px; min-width: 16px; }
+  .steps button { all: unset; display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 6px; border-radius: 999px; cursor: pointer;
+                  font-size: 14px; font-weight: 500; color: var(--muted); }
+  .steps button:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+  .steps button:focus-visible { box-shadow: var(--focus); }
+  .steps button:disabled { cursor: not-allowed; opacity: .45; }
+  .steps .dot { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px;
+                border: 2px solid var(--line-strong); background: var(--card); color: var(--muted); }
+  .steps .on button { color: var(--text); }
+  .steps .on .dot { border-color: var(--text); background: var(--text); color: #18181b; }
+  @media (max-width: 1000px) { .steps .st:not(.on) .lbl { display: none; } .steps .st { min-width: 0; } }
+
+  /* ---------------------------------------------------------------- cards */
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; }
+  .panel > h3:first-child, .card-head h3 { display: flex; align-items: center; gap: 8px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+
+  /* ---------------------------------------------------------------- buttons: primary white, ghost outlined, danger red */
+  button, a.btn, label.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 16px;
+    border-radius: 12px; border: 1px solid transparent; font: 500 14px/1 var(--font); cursor: pointer; white-space: nowrap;
+    text-decoration: none; background: #e4e4e7; color: #18181b; transition: background .12s, border-color .12s, color .12s, transform .12s;
+  }
+  button:hover:not(:disabled) { background: #fff; }
+  button:active:not(:disabled) { transform: scale(.97); }
+  button:focus-visible, a.btn:focus-visible { outline: none; box-shadow: var(--focus); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost, a.btn, label.btn { background: transparent; color: var(--text); border-color: var(--line-strong); }
+  button.ghost:hover:not(:disabled), a.btn:hover, label.btn:hover { background: var(--hover); }
+  button.danger { background: transparent; color: var(--err); border-color: transparent; }
+  button.danger:hover:not(:disabled) { background: var(--err-bg); }
+  button.sm, label.btn, a.btn { height: 32px; padding: 0 12px; font-size: 13px; }
+  button.icon { width: 32px; height: 32px; padding: 0; background: transparent; color: var(--muted); border-color: transparent; }
+  button.icon:hover:not(:disabled) { background: var(--hover); color: var(--text); }
+  button.icon.danger:hover:not(:disabled) { background: var(--err-bg); color: var(--err); }
+  button.block { width: 100%; }
+
+  /* ---------------------------------------------------------------- form controls */
+  label { display: block; color: var(--muted); font-size: 12px; font-weight: 500; margin: 14px 0 6px; }
+  input, textarea, select { width: 100%; min-height: 40px; padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid var(--line-strong);
+                            background: var(--field); color: var(--text); font: 400 14px/1.4 var(--font); }
+  textarea { resize: vertical; }
+  select { appearance: none; padding-right: 36px;
+    background: var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center; }
+  option { background: var(--soft); color: var(--text); }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--muted); box-shadow: var(--focus); }
+  input[type=checkbox] { width: 18px; height: 18px; min-height: 0; padding: 0; accent-color: #e4e4e7; vertical-align: middle; margin: 0 6px 0 0; }
+  input[type=color] { width: 40px; height: 32px; min-height: 0; padding: 2px; cursor: pointer; vertical-align: middle; }
+  input[type=range] { padding: 0; min-height: 0; accent-color: #e4e4e7; border: 0; background: none; }
+  input[type=file] { padding: 6px; min-height: 0; font-size: 13px; }
+  input[type=file]::file-selector-button { font: 500 13px var(--font); color: var(--text); background: transparent; border: 1px solid var(--line-strong);
+                                           border-radius: 8px; padding: 6px 12px; margin-right: 10px; cursor: pointer; }
+  label > input[type=checkbox] + span, label:has(> input[type=checkbox]) { color: var(--text); font-size: 14px; font-weight: 400; cursor: pointer; }
+
+  /* ---------------------------------------------------------------- layout helpers */
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+  .grow { flex: 1; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .split { display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+  @media (max-width: 900px) { .split, .grid2 { grid-template-columns: 1fr; } }
+
+  /* ---------------------------------------------------------------- feedback: chips, counters, callouts */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;
+           text-transform: uppercase; letter-spacing: .04em; background: var(--soft); color: var(--text); }
+  .badge.approved { background: var(--warn-bg); color: var(--warn); }
+  .badge.published { background: var(--ok-bg); color: var(--link-ok); }
+  .badge.failed { background: var(--err-bg); color: var(--err); }
+  .count { font-size: 12px; color: var(--muted); font-weight: 400; } .count.over { color: var(--err); font-weight: 600; }
+  .msg { color: var(--muted); margin: 6px 0 0; }
+  .warn { display: flex; gap: 8px; align-items: flex-start; padding: 8px 12px; border-radius: var(--r); font-size: 13px; margin: 8px 0 0;
+          background: var(--warn-bg); border: 1px solid rgba(245, 176, 65, .35); color: #ffd699; }
+  .err { color: var(--err); font-size: 13px; margin: 8px 0 0; }
+  .err:empty, .msg:empty { display: none; }
+  .ok { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-radius: var(--r); margin: 8px 0 0;
+        background: var(--ok-bg); border: 1px solid rgba(43, 166, 64, .4); color: #a6e9b3; }
+  .ok a { color: #a6e9b3; }
+  .progress { height: 4px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0; }
+  .progress > i { display: block; height: 100%; background: var(--text); border-radius: inherit; transition: width .3s; }
+
+  /* ---------------------------------------------------------------- images: phone frames, template gallery */
+  .phone { width: 100%; max-width: 320px; aspect-ratio: 9 / 16; border-radius: var(--r-lg); border: 1px solid var(--line);
+           display: block; object-fit: cover; background: #000; }
+  .phone.big { max-width: 420px; box-shadow: var(--shadow); }
+  .cat { margin: 22px 0 10px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .tpls { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+  .tpl { cursor: pointer; border-radius: var(--r); overflow: hidden; background: var(--soft); border: 1px solid var(--line);
+         transition: border-color .12s, box-shadow .12s; }
+  .tpl:hover { border-color: var(--line-strong); box-shadow: var(--shadow); }
+  .tpl .phone { max-width: none; border: 0; border-radius: 0; }
+  .tpl small { display: flex; align-items: center; gap: 6px; padding: 8px 10px; font-size: 12px; font-weight: 600; }
+  .tpl .count { display: block; padding: 0 10px 8px; }
+  .tpl.on { border-color: var(--ok); box-shadow: 0 0 0 2px var(--ok); }
+  .tpl.on small { background: var(--ok); color: #fff; }
+  .tpl.off { opacity: .4; cursor: not-allowed; }
+  .post { white-space: pre-wrap; background: var(--field); border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 12px 14px;
+          font-size: 14px; margin-top: 6px; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .shots img { width: 100%; border-radius: var(--r); border: 1px solid var(--line); }
+
+  /* ---------------------------------------------------------------- GIMP box */
+  .gimp { border: 1px dashed var(--line-strong); border-radius: var(--r); padding: 12px 14px; margin-top: 18px; font-size: 13px; }
+  .gimp b { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .gimp .row { margin-top: 10px; }
+
+  /* ---------------------------------------------------------------- 3. Estilo (mini-studio's thumbnail step: settings card + result) */
+  .stylelay { display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start; }
+  @media (max-width: 1000px) { .stylelay { grid-template-columns: 1fr; } }
+  .side { display: grid; gap: 2px; }
+  .side > label:first-child { margin-top: 0; }
+  .group { padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--line); }
+  .group > h4:first-child { margin-top: 0; }
+  details.group summary { cursor: pointer; color: var(--text); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .colors { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+  .colors div { font-size: 12px; color: var(--muted); }
+  .sizes { display: grid; grid-template-columns: 110px 1fr 40px; gap: 6px 10px; align-items: center; font-size: 13px; color: var(--muted); }
+  .slot { margin-top: 8px; gap: 8px; } .lbl { width: 70px; font-size: 12px; font-weight: 500; color: var(--muted); }
+  .mini { height: 40px; max-width: 90px; object-fit: contain; border-radius: var(--r-sm); background: var(--field); border: 1px solid var(--line); }
+  label.btn { margin: 0; }
+  .file { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header><div class="brand"><span class="logo" id="logo"></span><h1>mini-news</h1></div>
+  <span class="tag">Claude Code escreve · você aprova · X + Facebook</span></header>
+<div class="layout">
+  <aside>
+    <button class="block" id="new"></button>
+    <h2>Rascunhos</h2>
+    <div id="drafts"></div>
+  </aside>
+  <main>
+    <nav class="steps" id="steps"></nav>
+    <div id="view"></div>
+  </main>
+</div>
+<script>
+const STEPS = ["1. Fonte", "2. Template", "3. Estilo", "4. Texto", "5. Prévia", "6. Publicar"];
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+let draft = null, templates = [], categories = [];
+
+const ICONS = {
+  plus: ["M12 5v14", "M5 12h14"],
+  edit: ["M12 20h9", "M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"],
+  trash: ["M3 6h18", "M8 6V4h8v2", "M19 6l-1 14H6L5 6", "M10 11v6", "M14 11v6"],
+  back: ["M19 12H5", "M12 19l-7-7 7-7"],
+  next: ["M5 12h14", "M12 5l7 7-7 7"],
+  check: ["M20 6L9 17l-5-5"],
+  sparkles: ["M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z", "M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"],
+  save: ["M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z", "M17 21v-8H7v8", "M7 3v5h8"],
+  upload: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M17 8l-5-5-5 5", "M12 3v12"],
+  download: ["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"],
+  x: ["M18 6L6 18", "M6 6l12 12"],
+  alert: ["M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z", "M12 9v4", "M12 17h.01"],
+  image: ["M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z", "M21 15l-5-5L5 21", "M10 8.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"],
+  external: ["M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6", "M15 3h6v6", "M10 14L21 3"],
+  refresh: ["M21 12a9 9 0 1 1-3-6.7L21 8", "M21 3v5h-5"],
+  settings: ["M4 21v-7", "M4 10V3", "M12 21v-9", "M12 8V3", "M20 21v-5", "M20 12V3", "M1 14h6", "M9 8h6", "M17 16h6"],
+  copy: ["M20 9h-9a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2z", "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"],
+  news: ["M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2", "M18 14h-8", "M15 18h-5", "M10 6h8v4h-8z"],
+  link: ["M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7", "M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"],
+  layout: ["M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z", "M3 9h18", "M9 21V9"],
+  palette: ["M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.5 3.3A1.7 1.7 0 0 1 12 22z", "M7.5 10.5h.01", "M10.5 7h.01", "M15 7.5h.01", "M17 11.5h.01"],
+  text: ["M4 7V4h16v3", "M9 20h6", "M12 4v16"],
+  eye: ["M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z", "M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"],
+  send: ["M22 2L11 13", "M22 2l-7 20-4-9-9-4z"],
+  play: ["M5 3l14 9-14 9z"],
+  brush: ["M9.1 11.9l8.5-8.5a2.1 2.1 0 0 1 3 3l-8.5 8.5", "M7 14a3 3 0 0 0-3 3c0 1.3-1 2-2 2 1 1.5 3 2 5 2a4 4 0 0 0 4-4 3 3 0 0 0-3-3z"],
+};
+// an inline SVG icon, like mini-studio's <app-icon name="..." />
+const ic = (name, size = 18, stroke = 2) => `<svg class="i" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${(ICONS[name] || ICONS.x).map(d => `<path d="${d}"/>`).join("")}</svg>`;
+const STEP_ICONS = ["link", "layout", "palette", "text", "eye", "send"];
+
+async function api(method, url, body, raw) {
+  const r = await fetch(url, {method, body: raw ?? (body && JSON.stringify(body)),
+                              headers: raw ? {} : {"Content-Type": "application/json"}});
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(data.detail || r.statusText); e.status = r.status; throw e; }
+  return data;
+}
+
+// Redrawing an image you edited in GIMP replaces those edits: the server answers 409, we ask first.
+async function guarded(call) {
+  try { return await call(false); }
+  catch (err) {
+    if (err.status !== 409) throw err;
+    return new Promise((resolve, reject) => {
+      fail(new Error("Esta imagem foi editada no GIMP. Refazer o desenho substitui essas edições (a versão do GIMP fica salva como .xcf.bak)."));
+      const b = document.createElement("button");
+      b.className = "danger"; b.style.marginLeft = "10px"; b.textContent = "Refazer mesmo assim";
+      b.onclick = async () => { b.disabled = true; try { $("#err").textContent = ""; resolve(await call(true)); } catch (e) { reject(e); } };
+      $("#err").append(b);
+    });
+  }
+}
+
+// Poll a GIMP job: onProgress(job) each second until it's done.
+async function poll(jobId, onProgress) {
+  for (;;) {
+    const j = await api("GET", `/api/jobs/${jobId}`);
+    onProgress(j);
+    if (j.status !== "running") { if (j.error) throw new Error(j.error); return j; }
+    await new Promise(r => setTimeout(r, 1000));
+  }
+}
+
+function gimpBox(d, after) {   // "Abrir no GIMP" / "Usar versão do GIMP" (steps 4 and 5)
+  if (d.status === "published") return "";
+  return `<div class="gimp"><b>${ic("brush", 16)} Ajuste fino no GIMP</b> ${d.gimp_edited ? '<span class="badge approved">editado no GIMP</span>' : ""}
+    <p class="msg" style="margin:4px 0 0">Abre o arquivo .xcf (camadas e textos editáveis). Ajuste, salve com Ctrl+S e clique em "Usar versão do GIMP".</p>
+    <div class="row"><button class="ghost" id="gopen">${ic("external")} Abrir no GIMP</button>${d.gimp_edited ? `<button id="gapply">${ic("check")} Usar versão do GIMP</button>` : ""}</div>
+    <p class="msg" id="gmsg"></p></div>`;
+}
+
+function wireGimp(after) {
+  if ($("#gopen")) $("#gopen").onclick = async e => {
+    busy(e.target, true, "Abrindo…");
+    try { draft = await api("POST", `/api/drafts/${draft.id}/gimp/open`); after();
+          $("#gmsg").textContent = "O GIMP está abrindo o arquivo. Depois de salvar (Ctrl+S), clique em \"Usar versão do GIMP\"."; }
+    catch (err) { busy(e.target, false); fail(err); }
+  };
+  if ($("#gapply")) $("#gapply").onclick = async e => {
+    busy(e.target, true, "Exportando…");
+    try { draft = await api("POST", `/api/drafts/${draft.id}/gimp/apply`); after(); loadList();
+          $("#gmsg").textContent = "Pronto: a imagem agora é a versão que você salvou no GIMP."; }
+    catch (err) { busy(e.target, false); fail(err); }
+  };
+}
+
+function busy(btn, on, label) {
+  btn.disabled = on;
+  if (on) { btn.dataset.html = btn.innerHTML; btn.innerHTML = `${ic("refresh", 16)} ${label || "…"}`; }
+  else if (btn.dataset.html) btn.innerHTML = btn.dataset.html;
+}
+
+function fail(err) {
+  let e = $("#err");
+  if (!e) { e = document.createElement("p"); e.className = "err"; e.id = "err"; $("#view").prepend(e); }
+  e.textContent = err.message;
+}
+
+async function loadList() {
+  const list = await api("GET", "/api/drafts");
+  $("#drafts").replaceChildren(...list.map(d => {
+    const el = document.createElement("div");
+    el.className = "item" + (draft && d.id === draft.id ? " on" : "");
+    el.innerHTML = `<b>${esc(d.headline)}</b><div class="meta"><span class="badge ${d.status}">${d.status}</span>
+      ${d.gimp_edited ? `<span class="badge" title="editado no GIMP">${ic("brush", 12)}</span>` : ""}
+      <div class="acts">${d.status === "published" ? "" : `<button class="icon" data-a="edit" title="Editar">${ic("edit", 16)}</button>`}
+        <button class="icon danger" data-a="del" title="Apagar">${ic("trash", 16)}</button></div></div>`;
+    el.onclick = async e => {
+      const a = e.target.dataset.a;
+      if (a === "del") {
+        e.stopPropagation();
+        if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.classList.remove("icon"); e.target.classList.add("sm"); e.target.textContent = "Apagar?"; return; }
+        try { await api("DELETE", `/api/drafts/${d.id}`); } catch (err) { return fail(err); }
+        if (draft && draft.id === d.id) { draft = null; go(1); }
+        return loadList();
+      }
+      open(d, a === "edit" ? 4 : d.status === "published" ? 6 : d.step);
+    };
+    return el;
+  }));
+  if (!list.length) $("#drafts").innerHTML = `<p class="msg">Nenhum rascunho ainda.</p>`;
+}
+
+function open(d, s) { draft = d; go(s || d.step || 2); loadList(); }
+
+function go(s) {
+  if (draft && draft.status !== "published" && s > 1 && s !== draft.step)   // remember the step to resume later
+    api("PUT", `/api/drafts/${draft.id}`, {step: s}).then(d => { if (draft && d.id === draft.id) draft = d; }).catch(() => {});
+  $("#steps").replaceChildren(...STEPS.map((name, i) => {
+    const li = document.createElement("div"), b = document.createElement("button");
+    li.className = "st" + (i + 1 === s ? " on" : "");
+    b.innerHTML = `<span class="dot">${i + 1}</span><span class="lbl">${esc(name.replace(/^\d+\. /, ""))}</span>`;
+    b.disabled = !draft && i > 0;
+    b.onclick = () => go(i + 1);
+    li.append(b);
+    return li;
+  }));
+  [, step1, step2, stepStyle, stepText, stepPreview, stepPublish][s]();
+}
+
+// ---- 1. Fonte
+function step1() {
+  $("#view").innerHTML = `<section class="panel">
+    <h3>${ic("link")} De onde vem a notícia?</h3>
+    <label>Link da notícia ou tema</label><input id="text" placeholder="https://… ou &quot;tema da notícia&quot;">
+    <label>Sua opinião (opcional, entra no post)</label><textarea id="take" rows="2" placeholder="o que você acha disso?"></textarea>
+    <div class="row"><button id="gen">${ic("sparkles")} Gerar com Claude Code</button><span class="msg" id="msg"></span></div>
+    <p class="err" id="err"></p></section>`;
+  $("#gen").onclick = async e => {
+    const text = $("#text").value.trim();
+    if (!text) return;
+    busy(e.target, true, "Gerando…");
+    $("#msg").textContent = "Claude Code está lendo e escrevendo (20 s a 3 min)…";
+    try { open(await api("POST", "/api/drafts", {text, take: $("#take").value}), 2); }
+    catch (err) { busy(e.target, false); $("#msg").textContent = ""; fail(err); }
+  };
+}
+
+// ---- 2. Template
+async function step2() {
+  if (!templates.length) ({templates, categories} = await api("GET", "/api/templates"));
+  const locked = draft.status === "published" ? "disabled" : "";
+  const photoMsg = {upload: "Usando a sua foto.", article: "Usando a foto da matéria (tem direitos autorais: prefira enviar a sua)."}[draft.photo]
+                   || "Sem foto: envie uma para usar os templates de foto.";
+  $("#view").innerHTML = `<section class="panel"><h3>${ic("layout")} Escolha o template</h3>
+    <p class="msg">20 templates desenhados pelo GIMP com o seu estilo. Clique para escolher; dá para ajustar qualquer um no GIMP depois.</p>
+    <div class="grid2"><div><label>Estilo</label><select id="style" ${locked}></select></div>
+      <div><label>Foto (templates de foto)</label><input type="file" id="photo" accept="image/*" ${locked}></div></div>
+    <p class="msg" id="photomsg">${photoMsg}</p>
+    <p class="msg" id="prog">GIMP: preparando…</p>
+    <div id="tpls"></div>
+    <div class="row"><button id="next">Próximo: estilo ${ic("next")}</button></div><p class="err" id="err"></p></section>`;
+  $("#next").onclick = () => go(3);
+  api("GET", "/api/styles").then(r => {
+    $("#style").innerHTML = r.styles.map(st => `<option value="${st.id}" ${st.id === draft.style ? "selected" : ""}>${esc(st.name)} (${st.format})</option>`).join("");
+    $("#style").onchange = async e => {
+      try { draft = await guarded(force => api("PUT", `/api/drafts/${draft.id}?force=${force}`, {style: e.target.value})); step2(); } catch (err) { fail(err); }
+    };
+  });
+  $("#photo").onchange = async e => {
+    const f = e.target.files[0]; if (!f) return;
+    $("#photomsg").textContent = "Enviando…";
+    try { draft = await guarded(force => api("POST", `/api/drafts/${draft.id}/photo?force=${force}`, null, f)); step2(); } catch (err) { fail(err); }
+  };
+  // the grid: one card per template, grouped by category; images arrive as GIMP draws them
+  const cells = {};
+  $("#tpls").replaceChildren(...categories.flatMap(cat => {
+    const h = document.createElement("div"); h.className = "cat"; h.textContent = cat;
+    const grid = document.createElement("div"); grid.className = "tpls";
+    grid.append(...templates.filter(t => t.category === cat).map(t => {
+      const el = document.createElement("div"), ok = draft.available.includes(t.id);
+      el.className = "tpl" + (t.id === draft.template ? " on" : "") + (ok ? "" : " off");
+      el.innerHTML = ok ? `<div class="phone"></div><small>${esc(t.name)}</small>`
+                        : `<div class="phone"></div><small>${esc(t.name)}</small><span class="count">falta: ${esc((draft.missing[t.id] || t.needs).join(", "))}</span>`;
+      if (ok && !locked) el.onclick = async () => {
+        try { draft = await guarded(force => api("PUT", `/api/drafts/${draft.id}?force=${force}`, {template: t.id}));
+              document.querySelectorAll(".tpl.on").forEach(x => x.classList.remove("on")); el.classList.add("on"); loadList(); }
+        catch (err) { fail(err); }
+      };
+      cells[t.id] = el;
+      return el;
+    }));
+    return [h, grid];
+  }));
+  try {
+    const {job} = await api("POST", `/api/drafts/${draft.id}/previews`);
+    const started = Date.now();
+    await poll(job, j => {
+      $("#prog").textContent = j.status === "running" ? `GIMP: ${j.done}/${j.total} desenhados…` : `GIMP: ${j.done}/${j.total} prontos em ${Math.round((Date.now() - started) / 1000)} s`;
+      for (const [t, url] of Object.entries(j.items)) {
+        const ph = cells[t] && $(".phone", cells[t]);
+        if (url && ph && ph.tagName !== "IMG") { const img = document.createElement("img"); img.className = "phone"; img.src = url; ph.replaceWith(img); }
+      }
+    });
+  } catch (err) { fail(err); }
+}
+
+// ---- 4. Texto
+function stepText() {
+  const d = draft, locked = d.status === "published" ? "disabled" : "";
+  const q = d.quote || {}, n = d.numbers || [];
+  const num = i => `<div class="grid2" style="margin-bottom:6px"><input data-n="${i}" data-k="value" placeholder="valor (ex.: +2,4%)" value="${esc(n[i]?.value)}" ${locked}>
+                    <input data-n="${i}" data-k="label" placeholder="o que significa" value="${esc(n[i]?.label)}" ${locked}></div>`;
+  $("#view").innerHTML = `<section class="panel split"><div>
+    <h3>${ic("text")} Edite o texto</h3>
+    <div class="grid2"><div><label>Etiqueta</label><input data-f="kicker" value="${esc(d.kicker)}" ${locked}></div>
+      <div><label>Template</label><select data-f="template" ${locked}>${templates.filter(t => d.available.includes(t.id)).map(t => `<option value="${t.id}" ${t.id === d.template ? "selected" : ""}>${esc(t.name)}</option>`).join("")}</select></div></div>
+    <label>Título da imagem</label><input data-f="headline" value="${esc(d.headline)}" ${locked}>
+    <label>Linha de apoio</label><input data-f="subhead" value="${esc(d.subhead)}" ${locked}>
+    <label>Citação (exatamente como na fonte)</label><textarea data-q="text" rows="2" ${locked}>${esc(q.text)}</textarea>
+    <div class="grid2"><input data-q="author" placeholder="quem disse" value="${esc(q.author)}" ${locked}>
+      <input data-q="role" placeholder="cargo" value="${esc(q.role)}" ${locked}></div>
+    <label>Números (até 3)</label>${num(0)}${num(1)}${num(2)}
+    <label>Pontos-chave (até 4)</label>${[0, 1, 2, 3].map(i => `<input data-p="${i}" style="margin-bottom:6px" value="${esc((d.points || [])[i])}" ${locked}>`).join("")}
+    <label>Pergunta para os leitores</label><input data-f="question" value="${esc(d.question)}" ${locked}>
+    <label>X <span class="count" id="xc"></span></label><textarea data-f="x_text" rows="3" ${locked}>${esc(d.x_text)}</textarea>
+    <label>Facebook</label><textarea data-f="facebook_text" rows="8" ${locked}>${esc(d.facebook_text)}</textarea>
+    <label>Sua opinião</label><textarea data-f="take" rows="2" ${locked}>${esc(d.take)}</textarea>
+    <div class="grid2"><div><label>Fonte</label><input data-f="source_name" value="${esc(d.source_name)}" ${locked}></div>
+      <div><label>Link da fonte</label><input data-f="source_url" value="${esc(d.source_url)}" ${locked}></div></div>
+    <label>Hashtags (separadas por espaço)</label><input data-f="hashtags" value="${esc((d.hashtags || []).join(" "))}" ${locked}>
+    <div class="row">${locked ? "" : `<button class="ghost" id="save">${ic("save")} Salvar e atualizar prévia</button>`}<button id="next">Próximo: prévia ${ic("next")}</button></div>
+    <p class="err" id="err"></p></div>
+    <div><img class="phone" id="img" src="${d.card}" alt=""></div></section>`;
+  const xc = () => {
+    const len = $("[data-f=x_text]").value.trim().length + ($("[data-f=source_url]").value ? 25 : 0);
+    $("#xc").textContent = `${len}/${d.x_limit} com o link`; $("#xc").classList.toggle("over", len > d.x_limit);
+  };
+  $("[data-f=x_text]").oninput = xc; xc();
+  const collect = () => {
+    const f = {};
+    document.querySelectorAll("[data-f]").forEach(i => f[i.dataset.f] = i.dataset.f === "hashtags" ? i.value.split(/\s+/).filter(Boolean) : i.value);
+    f.quote = {}; document.querySelectorAll("[data-q]").forEach(i => f.quote[i.dataset.q] = i.value.trim());
+    f.numbers = [0, 1, 2].map(i => ({value: $(`[data-n="${i}"][data-k=value]`).value.trim(), label: $(`[data-n="${i}"][data-k=label]`).value.trim()}))
+                         .filter(x => x.value);
+    f.points = [0, 1, 2, 3].map(i => $(`[data-p="${i}"]`).value.trim()).filter(Boolean);
+    return f;
+  };
+  const save = async () => {
+    $("#img").style.opacity = .4;   // GIMP redraws the image (a few seconds)
+    try { draft = await guarded(force => api("PUT", `/api/drafts/${draft.id}?force=${force}`, collect())); }
+    finally { $("#img").style.opacity = 1; }
+    $("#img").src = draft.card; loadList();
+  };
+  if (!locked) $("#save").onclick = async e => { busy(e.target, true, "Salvando…"); try { await save(); } catch (err) { fail(err); } busy(e.target, false); };
+  $("#next").onclick = async () => { try { if (!locked) await save(); go(5); } catch (err) { fail(err); } };
+}
+
+// ---- 5. Prévia
+function stepPreview() {
+  const d = draft;
+  $("#view").innerHTML = `<section class="panel split"><div>
+    <h3>${ic("eye")} Assim vai sair</h3>
+    ${(d.all_warnings || []).map(w => `<p class="warn">${ic("alert", 16)} <span>${esc(w)}</span></p>`).join("")}
+    <label>X <span class="count ${d.x_length > d.x_limit ? "over" : ""}">${d.x_length}/${d.x_limit}</span></label><div class="post">${esc(d.x_post)}</div>
+    <label>Facebook</label><div class="post">${esc(d.facebook_post)}</div>
+    <div class="row"><button class="ghost" id="back">${ic("back")} Editar texto</button><button id="next">Próximo: publicar ${ic("next")}</button></div>
+    ${gimpBox(d)}<p class="err" id="err"></p></div>
+    <div><img class="phone" src="${d.card}" alt=""></div></section>`;
+  $("#back").onclick = () => go(4); $("#next").onclick = () => go(6);
+  wireGimp(stepPreview);
+}
+
+// ---- 6. Publicar
+function stepPublish() {
+  const d = draft;
+  const pub = Object.entries(d.published || {}).map(([n, p]) => `<p class="ok">${ic("check", 16)} publicado no ${esc(n)}: <a href="${esc(p.url)}" target="_blank">${esc(p.url)}</a></p>`).join("");
+  const errs = Object.entries(d.errors || {}).map(([n, e]) => `<p class="err">erro no ${esc(n)}: ${esc(e)}</p>`).join("");
+  const can = ["approved", "failed"].includes(d.status);
+  $("#view").innerHTML = `<section class="panel split"><div>
+    <h3>${ic("send")} Publicar <span class="badge ${d.status}">${d.status}</span></h3>${pub}${errs}
+    ${d.status === "draft" ? `<p class="msg">Revise a prévia e aprove. Depois de aprovado, editar volta para rascunho.</p>
+      <div class="row"><button id="approve">${ic("check")} Aprovar</button></div>` : ""}
+    ${can ? `<label><input type="checkbox" id="x" style="width:auto" ${d.published?.x ? "disabled" : "checked"}> X</label>
+      <label><input type="checkbox" id="fb" style="width:auto" ${d.published?.facebook ? "disabled" : "checked"}> Facebook</label>
+      <div class="row"><button class="ghost" id="dry">${ic("play")} Testar (não envia)</button><button id="pub">${ic("send")} Publicar agora</button></div>` : ""}
+    <p class="msg" id="msg"></p><p class="err" id="err"></p>
+    ${gimpBox(d)}
+    <div class="row"><button class="danger" id="del">${ic("trash")} Apagar rascunho</button></div></div>
+    <div><img class="phone" src="${d.card}" alt=""></div></section>`;
+  wireGimp(stepPublish);
+  if ($("#approve")) $("#approve").onclick = async e => {
+    busy(e.target, true); try { draft = await api("POST", `/api/drafts/${d.id}/approve`); stepPublish(); loadList(); } catch (err) { busy(e.target, false); fail(err); }
+  };
+  const only = () => ($("#x").checked && $("#fb").checked) ? null : $("#x").checked ? "x" : $("#fb").checked ? "facebook" : "none";
+  if ($("#dry")) $("#dry").onclick = async e => {
+    if (only() === "none") return fail(new Error("marque X e/ou Facebook"));
+    busy(e.target, true);
+    try {
+      const r = await api("POST", `/api/drafts/${d.id}/publish`, {only: only(), dry_run: true});
+      const errors = Object.entries(r.errors);
+      $("#msg").textContent = errors.length ? "" : "Teste ok: a imagem e os textos da prévia estão prontos para enviar.";
+      $("#err").textContent = errors.map(([n, e]) => `${n}: ${e}`).join(" · ");
+    } catch (err) { fail(err); }
+    busy(e.target, false);
+  };
+  if ($("#pub")) $("#pub").onclick = async e => {
+    if (only() === "none") return fail(new Error("marque X e/ou Facebook"));
+    busy(e.target, true, "Publicando…");
+    try { draft = await api("POST", `/api/drafts/${d.id}/publish`, {only: only()}); stepPublish(); loadList(); } catch (err) { busy(e.target, false); fail(err); }
+  };
+  $("#del").onclick = async e => {
+    if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = "Clique de novo para apagar"; return; }
+    try { await api("DELETE", `/api/drafts/${d.id}`); draft = null; go(1); loadList(); } catch (err) { fail(err); }
+  };
+}
+
+// ---- 3. Estilo: like mini-studio's thumbnail step: a settings card on the left, the GIMP result on the right
+const COLOR_FIELDS = [["accent", "Destaque (etiquetas)"], ["breaking", "Etiqueta urgente"], ["background", "Fundo"],
+  ["plate", "Placa do título"], ["plate_text", "Texto na placa"], ["bar", "Barra da fonte / números"], ["text", "Texto"],
+  ["muted", "Texto secundário"], ["number", "Números"], ["quote_mark", "Aspas"]];
+const SIZE_FIELDS = [["headline", "Título"], ["subhead", "Linha de apoio"], ["quote", "Citação"], ["number", "Números"],
+  ["label", "Legendas / fonte"], ["tab", "Etiquetas"]];
+
+async function stepStyle() {
+  if (!templates.length) ({templates, categories} = await api("GET", "/api/templates"));
+  const d = draft, locked = d.status === "published";
+  const {styles, formats, themes} = await api("GET", "/api/styles");
+  const st = d.style_data;   // this draft's own copy: changing it changes nothing else
+  const c = st.colors, b = st.background, lg = st.logo, t = st.texts;
+  const theme = Object.entries(themes).find(([, v]) => v.accent.join() === c.accent.join())?.[0] || "";
+  const tname = (templates.find(x => x.id === d.template) || {}).name || d.template;
+  const colorInputs = (k, v) => (Array.isArray(v) ? v : [v]).map((x, i) => `<input type="color" data-c="${k}" data-i="${i}" value="${x}">`).join("");
+  const asset = (kind, file, label) => `<div class="row slot"><span class="lbl">${label}</span>
+      ${file ? (kind.startsWith("font") ? `<span class="msg">${esc(file)}</span>` : `<img class="mini" src="/style-assets/${encodeURIComponent(file)}" alt="">`) : `<span class="msg">nenhum</span>`}
+      <span class="grow"></span>
+      <label class="btn">${ic("upload", 16)} Enviar<input type="file" data-kind="${kind}" accept="${kind.startsWith("font") ? ".ttf,.otf" : "image/*"}" hidden></label>
+      ${file ? `<button class="icon" data-clear="${kind}" title="Remover">${ic("x", 16)}</button>` : ""}</div>`;
+  $("#view").innerHTML = `<div class="stylelay">
+    <aside class="panel side">
+      <h3 style="margin-bottom:2px">${ic("palette")} Estilo deste rascunho</h3>
+      <p class="msg" style="margin:0">Todo rascunho novo começa com o padrão. O que você muda aqui vale só para este rascunho.</p>
+      <label>Começar de um estilo salvo</label>
+      <select id="pick" ${locked ? "disabled" : ""}><option value="">escolha para aplicar…</option>${styles.map(x => `<option value="${x.id}">${esc(x.id === "default" ? "Padrão" : x.name)} (${x.format})</option>`).join("")}</select>
+      <div class="grid2"><div><label>Cor</label><select id="theme"><option value="">personalizada</option>${Object.keys(themes).map(k => `<option ${k === theme ? "selected" : ""}>${k}</option>`).join("")}</select></div>
+        <div><label>Formato</label><select id="format">${formats.map(f => `<option ${f === st.format ? "selected" : ""}>${f}</option>`).join("")}</select></div></div>
+      <div class="group"><h4>Imagens</h4>${asset("background", b.image, "Fundo")}${asset("logo", lg.image, "Logo")}
+        <div class="grid2"><div><label>Posição do logo</label><select id="lpos">${["top", "top-left", "top-right", "none"].map(x => `<option ${x === lg.position ? "selected" : ""}>${x}</option>`).join("")}</select></div>
+          <div><label>Altura do logo</label><input type="number" id="lh" min="30" max="300" value="${lg.height}"></div></div></div>
+      <div class="group"><h4>Textos</h4>
+        <div class="grid2"><div><label>Nome do canal</label><input id="tch" value="${esc(t.channel)}"></div>
+          <div><label>Selo</label><input id="tbadge" value="${esc(t.badge)}"></div></div>
+        <label>Rodapé ({channel} = nome do canal; vazio = sem rodapé)</label><input id="tfollow" value="${esc(t.follow)}"></div>
+      <details class="group"><summary>${ic("settings", 16)} Mais ajustes: cores, fundo, fontes, tamanhos</summary>
+        <h4>Cores</h4><div class="colors">${COLOR_FIELDS.map(([k, n]) => `<div>${n}<br>${colorInputs(k, c[k])}</div>`).join("")}</div>
+        <h4>Fundo</h4>
+        <div class="sizes"><span>Opacidade</span><input type="range" id="bgop" min="0" max="1" step=".05" value="${b.opacity}"><span>${b.opacity}</span>
+          <span>Escurecer</span><input type="range" id="bgdark" min="0" max="0.9" step=".05" value="${b.darken}"><span>${b.darken}</span></div>
+        <label><input type="checkbox" id="stripes" style="width:auto" ${b.stripes ? "checked" : ""}> Listras diagonais</label>
+        <h4>Fontes (.ttf / .otf)</h4>${asset("font_heading", st.fonts.heading, "Títulos")}${asset("font_body", st.fonts.body, "Texto")}
+        <h4>Tamanhos</h4>
+        <div class="sizes">${SIZE_FIELDS.map(([k, n]) => `<span>${n}</span><input type="range" data-s="${k}" min=".5" max="2" step=".05" value="${st.sizes[k]}"><span>${st.sizes[k]}</span>`).join("")}</div>
+        <label>Antes da fonte</label><input id="tsrc" value="${esc(t.source_prefix)}">
+        <label><input type="checkbox" id="tdate" style="width:auto" ${t.show_date ? "checked" : ""}> Mostrar a data</label>
+        <label><input type="checkbox" id="tbadgeon" style="width:auto" ${t.show_badge ? "checked" : ""}> Mostrar o selo do canal</label>
+        <h4>Ajustes por template (JSON)</h4>
+        <textarea id="tpl" rows="3" placeholder='{"breaking": {"colors": {"accent": ["#ff0000", "#990000"]}}}'>${esc(Object.keys(st.templates || {}).length ? JSON.stringify(st.templates, null, 2) : "")}</textarea>
+      </details>
+      <button id="render" class="block" style="margin-top:16px" ${locked ? "disabled" : ""}>${ic("sparkles")} Renderizar com este estilo</button>
+      <p class="msg" id="msg"></p><p class="err" id="err"></p>
+      <div class="group"><h4>Padrão e estilos salvos</h4>
+        <div class="row" style="margin-top:4px"><button class="ghost sm" id="sreset" ${locked ? "disabled" : ""}>${ic("refresh", 16)} Voltar ao padrão</button>
+          <button class="ghost sm" id="sdefault" title="Os próximos rascunhos começam com este estilo">${ic("save", 16)} Salvar como padrão</button></div>
+        <div class="row" style="margin-top:8px"><input id="sname" placeholder="nome do estilo" style="flex:1;min-height:32px">
+          <button class="ghost sm" id="saveas">${ic("copy", 16)} Salvar como estilo</button></div>
+        <p class="msg" style="font-size:12px"><a href="#" id="factory">Restaurar o padrão original</a> (azul e prata)</p></div>
+    </aside>
+    <section class="panel">
+      <div class="card-head"><h3>${ic("palette")} ${esc(tname)}</h3>
+        ${d.xcf ? `<a class="btn" href="/cards/${d.id}.xcf" download>${ic("download", 16)} .xcf (editar no GIMP)</a>` : ""}</div>
+      <img class="phone big" id="img" src="${d.card || ""}" alt="">
+      <div class="row"><button class="ghost" id="back">${ic("back")} Trocar template</button><button id="next">Próximo: texto ${ic("next")}</button></div>
+    </section></div>`;
+
+  document.querySelectorAll("input[type=range]").forEach(r => r.oninput = () => r.nextElementSibling.textContent = r.value);
+  $("#theme").onchange = e => {   // a named color fills in the accent colors (like mini-studio's Color)
+    const th = themes[e.target.value]; if (!th) return;
+    for (const [k, v] of Object.entries(th))
+      (Array.isArray(v) ? v : [v]).forEach((x, i) => { const inp = $(`[data-c="${k}"][data-i="${i}"]`); if (inp) inp.value = x; });
+  };
+  const collect = () => {
+    const colors = {};
+    COLOR_FIELDS.forEach(([k]) => { const v = [...document.querySelectorAll(`[data-c="${k}"]`)].map(i => i.value); colors[k] = Array.isArray(c[k]) ? v : v[0]; });
+    const sizes = {}; document.querySelectorAll("[data-s]").forEach(r => sizes[r.dataset.s] = +r.value);
+    const tpl = $("#tpl").value.trim() ? JSON.parse($("#tpl").value) : {};   // bad JSON: shown as the error
+    return {...st, format: $("#format").value, colors, sizes, templates: tpl,
+      background: {...b, opacity: +$("#bgop").value, darken: +$("#bgdark").value, stripes: $("#stripes").checked},
+      logo: {...lg, position: $("#lpos").value, height: +$("#lh").value},
+      texts: {...t, channel: $("#tch").value, badge: $("#tbadge").value, follow: $("#tfollow").value,
+              source_prefix: $("#tsrc").value, show_date: $("#tdate").checked, show_badge: $("#tbadgeon").checked}};
+  };
+  const render = async () => {   // save the style, then GIMP redraws this draft's image with it
+    const data = collect();
+    $("#msg").textContent = "GIMP está desenhando…"; $("#err").textContent = ""; $("#img").style.opacity = .4;
+    try { draft = await guarded(force => api("PUT", `/api/drafts/${d.id}/style?force=${force}`, data)); }
+    finally { $("#img").style.opacity = 1; }
+    $("#img").src = draft.card; $("#msg").textContent = "Pronto."; loadList();
+  };
+  $("#render").onclick = async e => {
+    busy(e.target, true, "Renderizando…");
+    try { await render(); } catch (err) { $("#msg").textContent = ""; fail(err); }
+    busy(e.target, false);
+  };
+  const apply = async (call, label) => {   // replace this draft's style, then GIMP redraws
+    $("#msg").textContent = label; $("#err").textContent = ""; $("#img").style.opacity = .4;
+    try { draft = await guarded(call); stepStyle(); loadList(); }
+    catch (err) { $("#msg").textContent = ""; $("#img").style.opacity = 1; fail(err); }
+  };
+  $("#pick").onchange = async e => {
+    if (!e.target.value) return;
+    const {style} = await api("GET", `/api/styles/${e.target.value}`);
+    apply(force => api("PUT", `/api/drafts/${d.id}/style?force=${force}`, style), "Aplicando o estilo…");
+  };
+  $("#sreset").onclick = () => apply(force => api("POST", `/api/drafts/${d.id}/style/reset?force=${force}`), "Voltando ao padrão…");
+  $("#sdefault").onclick = async e => {
+    if (!e.currentTarget.dataset.sure) { e.currentTarget.dataset.sure = 1; e.currentTarget.innerHTML = `${ic("save", 16)} Confirmar: novos rascunhos usam este`; return; }
+    try { await api("POST", `/api/drafts/${d.id}/style/save-default`, {style: collect()});
+          $("#msg").textContent = "Salvo: os próximos rascunhos começam com este estilo."; }
+    catch (err) { fail(err); }
+  };
+  $("#saveas").onclick = async () => {
+    const name = $("#sname").value.trim(); if (!name) return fail(new Error("dê um nome ao estilo"));
+    try { await api("POST", `/api/drafts/${d.id}/style/save-as`, {name, style: collect()}); $("#msg").textContent = `Estilo "${name}" salvo.`; stepStyle(); }
+    catch (err) { fail(err); }
+  };
+  $("#factory").onclick = async e => {
+    e.preventDefault();
+    if (!e.target.dataset.sure) { e.target.dataset.sure = 1; e.target.textContent = "Confirmar: restaurar o padrão original"; return; }
+    try { await api("POST", "/api/styles/reset-default"); $("#msg").textContent = "Padrão original restaurado (vale para os próximos rascunhos)."; }
+    catch (err) { fail(err); }
+  };
+  document.querySelectorAll("[data-kind]").forEach(inp => inp.onchange = async () => {
+    const f = inp.files[0]; if (!f) return;
+    try { draft = await api("POST", `/api/drafts/${d.id}/style-asset?kind=${inp.dataset.kind}&filename=${encodeURIComponent(f.name)}`, null, f);
+          draft.style_data = {...collect(), background: draft.style_data.background, logo: {...collect().logo, image: draft.style_data.logo.image},
+                              fonts: draft.style_data.fonts};   // keep the unsaved edits on screen
+          stepStyle(); $("#msg").textContent = "Arquivo enviado: clique em Renderizar para ver."; }
+    catch (err) { fail(err); }
+  });
+  document.querySelectorAll("[data-clear]").forEach(btn => btn.onclick = async () => {
+    const s2 = collect(), k = btn.dataset.clear;
+    if (k === "background") s2.background.image = ""; else if (k === "logo") s2.logo.image = "";
+    else s2.fonts = {...s2.fonts, [k.replace("font_", "")]: "", [k.replace("font_", "") + "_name"]: ""};
+    apply(force => api("PUT", `/api/drafts/${d.id}/style?force=${force}`, s2), "Removendo…");
+  });
+  $("#back").onclick = () => go(2); $("#next").onclick = () => go(4);
+}
+
+$("#logo").innerHTML = ic("news", 20);
+$("#new").innerHTML = `${ic("plus")} Nova notícia`;
+$("#new").onclick = () => { draft = null; go(1); loadList(); };
+// #rascunho/<id>/<step> opens a draft at that step
+const m = location.hash.match(/^#rascunho\/([\w-]+)(?:\/(\d))?/);
+if (m) api("GET", `/api/drafts/${m[1]}`).then(d => open(d, +m[2] || d.step)).catch(() => go(1));
+else go(1);
+loadList();
+</script>
+</body>
+</html>

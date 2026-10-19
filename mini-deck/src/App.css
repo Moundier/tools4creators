@@ -1,0 +1,133 @@
+:root {
+  --bg: rgba(24, 24, 27, 0.92);
+  --fg: #e4e4e7;
+  --hover: rgba(255, 255, 255, 0.1);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 80px;
+  margin: 8px;
+  padding: 0 10px;
+  width: fit-content;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--fg);
+}
+
+.grip {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 56px;
+  opacity: 0.5;
+  cursor: grab;
+}
+
+.grip svg {
+  pointer-events: none;
+}
+
+.menu svg {
+  width: 32px;
+  height: 32px;
+}
+
+.menu button {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.menu button:hover {
+  background: var(--hover);
+}
+
+.menu button:active {
+  transform: scale(0.94);
+}
+
+.menu button {
+  position: relative;
+}
+
+.menu button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.menu button:disabled:hover {
+  background: transparent;
+}
+
+.menu button.record.active {
+  color: #ef4444;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.menu button.record.active svg {
+  fill: currentColor;
+}
+
+.menu button.pause.active,
+.menu button.mic.active {
+  color: #f59e0b;
+}
+
+.badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #ef4444;
+  color: #fff;
+  font: 600 11px/18px system-ui, sans-serif;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.menu svg.progress-ring {
+  position: absolute;
+  inset: 0;
+  width: 64px;
+  height: 64px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.progress-ring circle {
+  fill: none;
+  stroke: var(--hover);
+  stroke-width: 2;
+}
+
+.progress-ring circle.value {
+  stroke: var(--fg);
+  transition: stroke-dashoffset 300ms;
+}

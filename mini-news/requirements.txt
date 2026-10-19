@@ -1,0 +1,8 @@
+# Python packages for the project venv:  python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+pydantic                   # writer.py: checks the post format Claude Code returns
+fastapi                    # news.py: web app backend
+uvicorn[standard]          # news.py: web server
+requests                   # source.py / fb_post.py: fetch articles, Facebook Graph API
+requests-oauthlib          # x_post.py: X API (OAuth 1.0a user context)
+trafilatura                # source.py: the article's main text from a web page
+pillow                     # card.py: the news card image
